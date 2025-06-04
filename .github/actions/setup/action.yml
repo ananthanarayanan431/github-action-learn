@@ -1,5 +1,5 @@
 runs:
-  usings: composite
+  using: composite
   steps:
     - name: "Installing UV"
       shell: bash

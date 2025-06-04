@@ -1,0 +1,64 @@
+name: Python code quality checks
+on: [push, pull_request]
+
+jobs:
+    lock_file:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - uses: ./.github/actions/setup
+            - run: |
+                uv lock --locked --check
+                echo "Lock file is up to date"
+    
+    linting:
+        runs-on: ubuntu-latest
+        needs: lock_file
+        steps:
+            - uses: actions/checkout@v4
+            - uses: ./.github/actions/setup
+            - run: |
+                uvx ruff check .
+                echo "Linting completed successfully"
+
+    formatting:
+        runs-on: ubuntu-latest
+        needs: lock_file
+        steps:
+            - uses: actions/checkout@v4
+            - uses: ./.github/actions/setup
+            - run: |
+                uvx ruff format --check .
+                echo "Formatting check completed successfully"
+
+    type_checking:
+        runs-on: ubuntu-latest
+        needs: lock_file
+        steps:
+            - uses: actions/checkout@v4
+            - uses: ./.github/actions/setup
+            - run: |
+                uv run pyright 
+                echo "Type checking completed successfully"
+
+    tests:
+        runs-on: ubuntu-latest
+        needs: lock_file
+        steps:
+            - uses: actions/checkout@v4
+            - uses: ./.github/actions/setup
+            - run: |
+                uv run pytest --cov=src --cov-report=xml 
+                echo "Tests completed successfully"
+            - name: Upload coverage report
+              uses: codecov/codecov-action@v4
+              with:
+                token: ${{ secrets.CODECOV_TOKEN }}
+    
+    build:
+        runs-on: [ubuntu-latest]
+        needs: [linting, formatting, type_checking, tests]
+        steps:
+            - uses: actions/checkout@v4
+            - uses: ./.github/actions/setup
+            - run: uv build
